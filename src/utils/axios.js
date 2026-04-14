@@ -16,6 +16,8 @@ const BASE_URL = normalizedApiUrl
 const API = axios.create({
   baseURL: BASE_URL,
 });
+console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+console.log("BASE_URL:", BASE_URL);
 
 // Attach token automatically
 API.interceptors.request.use((req) => {
