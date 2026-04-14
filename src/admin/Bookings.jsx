@@ -269,7 +269,7 @@ export default function Bookings() {
   const fetchBookings = async () => {
     setLoading(true); setError("");
     try {
-      const res = await API.get("/api/bookings");
+      const res = await API.get("/bookings");
       setData(res.data);
     } catch {
       setError("Could not load bookings.");

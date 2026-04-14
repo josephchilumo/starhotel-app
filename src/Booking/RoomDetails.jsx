@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import API from "../utils/axios";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Outfit:wght@300;400;500&display=swap');
@@ -344,9 +345,8 @@ export default function RoomDetails() {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/accommodations");
-        const data = await res.json();
-        setRooms(data);
+        const res = await API.get("/accommodations");
+        setRooms(res.data);
       } catch {
         setError("Could not load rooms.");
       } finally {

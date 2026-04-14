@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import API from "../utils/axios";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
@@ -268,7 +268,7 @@ export default function AdminGallery() {
   const fetchImages = async () => {
     setLoading(true); setError("");
     try {
-      const res = await axios.get("/api/gallery");
+      const res = await API.get("/gallery");
       const raw = res.data;
       const list = Array.isArray(raw)          ? raw
                  : Array.isArray(raw?.images)   ? raw.images
@@ -297,7 +297,7 @@ export default function AdminGallery() {
     try {
       const formData = new FormData();
       Array.from(files).forEach(f => formData.append("images", f));
-      await axios.post("/api/gallery/upload", formData, {
+      await API.post("/gallery/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       await fetchImages();
@@ -312,7 +312,7 @@ export default function AdminGallery() {
   const handleDelete = async () => {
     if (!toDelete) return;
     try {
-      await axios.delete(`/api/gallery/${toDelete._id}`);
+      await API.delete(`/gallery/${toDelete._id}`);
       setImages(prev => prev.filter(img => img._id !== toDelete._id));
       showToast("Image deleted");
     } catch {

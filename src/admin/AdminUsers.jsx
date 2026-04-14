@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import axios from "axios";
+import API from "../utils/axios";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
@@ -308,7 +308,7 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     setLoading(true); setError("");
     try {
-      const res = await axios.get("/api/users");
+      const res = await API.get("/users");
       const raw = res.data;
       const list = Array.isArray(raw)        ? raw
                  : Array.isArray(raw?.users)  ? raw.users
@@ -334,7 +334,7 @@ export default function AdminUsers() {
 
   const handlePromote = async (user) => {
     try {
-      await axios.put(`/api/users/${user._id}`, { role: "admin" });
+      await API.put(`/users/${user._id}`, { role: "admin" });
       updateUser(user._id, { role: "admin" });
       showToast(`${user.fullName} promoted to Admin`);
     } catch { showToast("Action failed."); }
@@ -342,7 +342,7 @@ export default function AdminUsers() {
 
   const handleDemote = async (user) => {
     try {
-      await axios.put(`/api/users/${user._id}`, { role: "user" });
+      await API.put(`/users/${user._id}`, { role: "user" });
       updateUser(user._id, { role: "user" });
       showToast(`${user.fullName} demoted to User`);
     } catch { showToast("Action failed."); }
@@ -351,7 +351,7 @@ export default function AdminUsers() {
   const handleSuspend = async (user) => {
     const suspended = user.suspended !== true;
     try {
-      await axios.put(`/api/users/${user._id}`, { suspended });
+      await API.put(`/users/${user._id}`, { suspended });
       updateUser(user._id, { suspended });
       showToast(suspended ? `${user.fullName} suspended` : `${user.fullName} reinstated`);
     } catch { showToast("Action failed."); }
@@ -360,7 +360,7 @@ export default function AdminUsers() {
   const handleDelete = async () => {
     if (!toDelete) return;
     try {
-      await axios.delete(`/api/users/${toDelete._id}`);
+      await API.delete(`/users/${toDelete._id}`);
       setUsers(prev => prev.filter(u => u._id !== toDelete._id));
       showToast("User deleted");
     } catch { showToast("Delete failed."); }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
+import API from "../utils/axios";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400;1,600&family=Jost:wght@300;400;500&display=swap');
@@ -273,7 +273,7 @@ export default function GalleryPage() {
   const fetchImages = async () => {
     setLoading(true); setError("");
     try {
-      const res = await axios.get("http://localhost:5000/api/gallery");
+      const res = await API.get("/gallery");
 
       // Guard against wrapped response shapes
       const raw = res.data;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import axios from "axios";
+import API from "../utils/axios";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
@@ -390,7 +390,7 @@ export default function AdminFacilities() {
   const fetchFacilities = async () => {
     setLoading(true); setError("");
     try {
-      const res = await axios.get("/api/facilities");
+      const res = await API.get("/facilities");
       const raw = res.data;
       const list = Array.isArray(raw)             ? raw
                  : Array.isArray(raw?.facilities)  ? raw.facilities
@@ -425,11 +425,11 @@ export default function AdminFacilities() {
     setSaving(true);
     try {
       if (modal === "add") {
-        const res = await axios.post("/api/facilities", form);
+        const res = await API.post("/facilities", form);
         setFacilities(prev => [...prev, res.data]);
         showToast("Facility added");
       } else {
-        const res = await axios.put(`/api/facilities/${editId}`, form);
+        const res = await API.put(`/facilities/${editId}`, form);
         setFacilities(prev => prev.map(f => f._id === editId ? res.data : f));
         showToast("Facility updated");
       }
@@ -444,7 +444,7 @@ export default function AdminFacilities() {
   const handleToggle = async (facility) => {
     const updated = { ...facility, available: !facility.available };
     try {
-      await axios.put(`/api/facilities/${facility._id}`, { available: updated.available });
+      await API.put(`/facilities/${facility._id}`, { available: updated.available });
       setFacilities(prev => prev.map(f => f._id === facility._id ? updated : f));
     } catch {
       showToast("Toggle failed.");
@@ -454,7 +454,7 @@ export default function AdminFacilities() {
   const handleDelete = async () => {
     if (!toDelete) return;
     try {
-      await axios.delete(`/api/facilities/${toDelete._id}`);
+      await API.delete(`/facilities/${toDelete._id}`);
       setFacilities(prev => prev.filter(f => f._id !== toDelete._id));
       showToast("Facility deleted");
     } catch {

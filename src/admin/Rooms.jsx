@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../utils/axios";
 import { Link } from "react-router-dom";
 
 const STYLES = `
@@ -279,7 +279,7 @@ export default function Rooms() {
     setLoading(true); setError("");
     try {
       // ✅ Fixed typo: accomodation → accommodations
-      const res = await axios.get("http://localhost:5000/api/accommodations");
+      const res = await API.get("/accommodations");
       setRooms(res.data);
     } catch {
       setError("Could not load rooms.");
@@ -293,7 +293,7 @@ export default function Rooms() {
   const handleDelete = async () => {
     if (!toDelete) return;
     try {
-      await axios.delete(`http://localhost:5000/api/accommodations/${toDelete._id}`);
+      await API.delete(`/accommodations/${toDelete._id}`);
       setRooms(prev => prev.filter(r => r._id !== toDelete._id));
     } catch {
       alert("Delete failed.");

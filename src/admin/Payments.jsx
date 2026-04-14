@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import axios from "axios";
+import API from "../utils/axios";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
@@ -251,7 +251,7 @@ export default function Payments() {
   const fetchPayments = async () => {
     setLoading(true); setError("");
     try {
-      const res = await axios.get("/api/payments");
+      const res = await API.get("/payments");
       // Guard: API may return { payments:[] }, { data:[] }, or a plain array
       const raw = res.data;
       const list = Array.isArray(raw)          ? raw
