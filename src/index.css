@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@theme {
+  --color-cream: #FDFDD0;
+}
+@keyframes slowZoom {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 1.2s ease forwards;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+@media print {
+  nav {
+    display: block !important;
+  }
+}
+@media print {
+  .print-show {
+    opacity: 1 !important;
+    transform: none !important;
+    position: static !important;
+  }
+}
