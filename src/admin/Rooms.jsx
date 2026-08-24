@@ -2,285 +2,36 @@ import React, { useEffect, useState } from "react";
 import API from "../utils/axios";
 import { Link } from "react-router-dom";
 
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
-
-  :root {
-    --bark:      #2b2318;
-    --bark-lt:   #4a3f33;
-    --bronze:    #a0743c;
-    --bronze-lt: #c49558;
-    --fog:       #9c9188;
-    --border:    rgba(43,35,24,0.08);
-    --parch:     #f5f0e8;
-    --white:     #ffffff;
-    --green:     #27ae60;
-    --red:       #c0392b;
-  }
-
-  .rm-root { font-family: 'Jost', sans-serif; color: var(--bark); }
-
-  /* ── Page header ── */
-  .rm-header {
-    display: flex; align-items: flex-end;
-    justify-content: space-between; gap: 1rem;
-    margin-bottom: 1.75rem; flex-wrap: wrap;
-  }
-  .rm-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2rem; font-weight: 300; line-height: 1;
-    letter-spacing: -0.02em;
-  }
-  .rm-title em { font-style: italic; color: var(--bronze); }
-  .rm-subtitle { font-size: 0.72rem; color: var(--fog); margin-top: 0.3rem; }
-
-  .rm-add-btn {
-    display: inline-flex; align-items: center; gap: 0.6rem;
-    padding: 0.65rem 1.4rem;
-    background: var(--bark); color: var(--parch);
-    border: none; cursor: pointer;
-    font-family: 'Jost', sans-serif;
-    font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
-    font-weight: 500; text-decoration: none;
-    position: relative; overflow: hidden;
-    transition: background 0.25s;
-  }
-  .rm-add-btn::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: var(--bronze);
-    transform: translateX(-101%);
-    transition: transform 0.3s ease;
-    z-index: 0;
-  }
-  .rm-add-btn:hover::before { transform: translateX(0); }
-  .rm-add-btn > * { position: relative; z-index: 1; }
-
-  /* ── Stats bar ── */
-  .rm-stats {
-    display: flex; gap: 1px; background: var(--border);
-    border: 1px solid var(--border); margin-bottom: 1.5rem;
-    overflow: hidden;
-  }
-  .rm-stat {
-    flex: 1; background: var(--white);
-    padding: 1rem 1.25rem;
-    display: flex; flex-direction: column; gap: 0.2rem;
-  }
-  .rm-stat-label {
-    font-size: 0.55rem; letter-spacing: 0.2em;
-    text-transform: uppercase; color: var(--fog);
-  }
-  .rm-stat-val {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.75rem; font-weight: 300; color: var(--bark);
-    line-height: 1; letter-spacing: -0.02em;
-  }
-  .rm-stat-val.bronze { color: var(--bronze); }
-  @media (max-width: 600px) { .rm-stats { flex-wrap: wrap; } .rm-stat { min-width: 50%; } }
-
-  /* ── Toolbar ── */
-  .rm-toolbar {
-    display: flex; align-items: center; gap: 0.75rem;
-    margin-bottom: 1.25rem; flex-wrap: wrap;
-  }
-  .rm-search-wrap {
-    flex: 1; min-width: 180px;
-    display: flex; align-items: center; gap: 0.6rem;
-    background: var(--white); border: 1px solid var(--border);
-    padding: 0.55rem 0.9rem;
-  }
-  .rm-search-icon { color: var(--fog); flex-shrink: 0; }
-  .rm-search {
-    flex: 1; background: none; border: none; outline: none;
-    font-size: 0.78rem; color: var(--bark);
-    font-family: 'Jost', sans-serif; caret-color: var(--bronze);
-  }
-  .rm-search::placeholder { color: rgba(43,35,24,0.25); }
-
-  /* ── Grid ── */
-  .rm-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px; background: var(--border);
-    border: 1px solid var(--border);
-  }
-  @media (max-width: 900px) { .rm-grid { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 520px)  { .rm-grid { grid-template-columns: 1fr; } }
-
-  /* ── Room card ── */
-  .rm-card {
-    background: var(--white);
-    position: relative; overflow: hidden;
-  }
-
-  /* Image */
-  .rm-card-img-wrap {
-    position: relative; height: 160px; overflow: hidden;
-  }
-  .rm-card-img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-    transition: transform 0.6s ease;
-  }
-  .rm-card:hover .rm-card-img { transform: scale(1.05); }
-
-  /* Image overlay with actions */
-  .rm-card-overlay {
-    position: absolute; inset: 0;
-    background: rgba(14,15,13,0.55);
-    display: flex; align-items: center; justify-content: center; gap: 0.65rem;
-    opacity: 0; transition: opacity 0.3s;
-  }
-  .rm-card:hover .rm-card-overlay { opacity: 1; }
-
-  .rm-overlay-btn {
-    display: flex; align-items: center; gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
-    border: none; cursor: pointer;
-    font-family: 'Jost', sans-serif; font-weight: 500;
-    transition: background 0.2s, color 0.2s;
-  }
-  .rm-overlay-btn.edit {
-    background: var(--white); color: var(--bark);
-  }
-  .rm-overlay-btn.edit:hover { background: var(--parch); }
-  .rm-overlay-btn.delete {
-    background: rgba(192,57,43,0.9); color: var(--white);
-  }
-  .rm-overlay-btn.delete:hover { background: var(--red); }
-
-  /* Status badge */
-  .rm-card-badge {
-    position: absolute; top: 0.75rem; left: 0.75rem;
-    font-size: 0.55rem; letter-spacing: 0.16em; text-transform: uppercase;
-    padding: 0.2rem 0.55rem; font-weight: 500;
-    display: flex; align-items: center; gap: 0.3rem;
-  }
-  .rm-card-badge.available  { background: rgba(39,174,96,0.9);  color: white; }
-  .rm-card-badge.unavailable{ background: rgba(192,57,43,0.9);  color: white; }
-
-  .rm-badge-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.7; }
-
-  /* Card body */
-  .rm-card-body { padding: 1rem 1.25rem; }
-
-  .rm-card-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.15rem; font-weight: 400; color: var(--bark);
-    line-height: 1.2; margin-bottom: 0.35rem;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-
-  .rm-card-meta {
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 0.5rem;
-  }
-  .rm-card-price {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.1rem; color: var(--bronze); font-weight: 400;
-  }
-  .rm-card-occ {
-    font-size: 0.62rem; letter-spacing: 0.06em; color: var(--fog);
-    display: flex; align-items: center; gap: 0.25rem;
-  }
-
-  /* ── Delete confirm modal ── */
-  .rm-modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(14,15,13,0.65);
-    backdrop-filter: blur(4px);
-    z-index: 500;
-    display: flex; align-items: center; justify-content: center;
-    padding: 1rem;
-  }
-  .rm-modal {
-    background: var(--white);
-    padding: 2rem; max-width: 360px; width: 100%;
-    position: relative;
-  }
-  .rm-modal-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.35rem; font-weight: 400; color: var(--bark);
-    margin-bottom: 0.5rem;
-  }
-  .rm-modal-sub {
-    font-size: 0.78rem; color: var(--fog); line-height: 1.6;
-    margin-bottom: 1.5rem;
-  }
-  .rm-modal-sub strong { color: var(--bark-lt); font-weight: 500; }
-  .rm-modal-btns { display: flex; gap: 0.75rem; }
-  .rm-modal-cancel {
-    flex: 1; padding: 0.7rem;
-    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
-    background: none; border: 1px solid var(--border);
-    color: var(--fog); cursor: pointer; font-family: 'Jost', sans-serif;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .rm-modal-cancel:hover { color: var(--bark); border-color: rgba(43,35,24,0.2); }
-  .rm-modal-confirm {
-    flex: 1; padding: 0.7rem;
-    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
-    background: var(--red); color: white; border: none; cursor: pointer;
-    font-family: 'Jost', sans-serif; font-weight: 500;
-    transition: background 0.2s;
-  }
-  .rm-modal-confirm:hover { background: #a93226; }
-
-  /* ── Skeleton ── */
-  .rm-skel { animation: shimmer 1.4s ease-in-out infinite; }
-  @keyframes shimmer { 0%,100%{opacity:.45} 50%{opacity:1} }
-  .rm-skel-card { background: var(--white); }
-  .rm-skel-img  { height: 160px; background: var(--border); }
-  .rm-skel-body { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 8px; }
-  .rm-skel-line { height: 10px; background: var(--border); border-radius: 2px; }
-
-  /* ── Empty ── */
-  .rm-empty {
-    grid-column: 1/-1; padding: 4rem;
-    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
-    background: var(--white);
-  }
-  .rm-empty-icon { color: rgba(43,35,24,0.1); }
-  .rm-empty-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.2rem; font-style: italic; color: rgba(43,35,24,0.35);
-  }
-
-  /* Count bar */
-  .rm-count-bar {
-    padding: 0.6rem 1.25rem; border-top: 1px solid var(--border);
-    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(43,35,24,0.3); background: var(--parch);
-    border: 1px solid var(--border); border-top: none;
-  }
-`;
-
 function SkeletonCards() {
   return Array.from({ length: 6 }).map((_, i) => (
-    <div key={i} className="rm-skel-card rm-skel">
-      <div className="rm-skel-img" />
-      <div className="rm-skel-body">
-        <div className="rm-skel-line" style={{ width: "65%" }} />
-        <div className="rm-skel-line" style={{ width: "40%" }} />
+    <div
+      key={i}
+      className="overflow-hidden rounded border border-gray-200 bg-white shadow-sm"
+    >
+      <div className="h-52 animate-pulse bg-gray-100" />
+
+      <div className="space-y-4 p-5">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-gray-100" />
+        <div className="h-3 w-1/3 animate-pulse rounded bg-gray-100" />
       </div>
     </div>
   ));
 }
 
 export default function Rooms() {
-  const [rooms,   setRooms]   = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
-  const [search,  setSearch]  = useState("");
-  const [toDelete, setToDelete] = useState(null); // room object
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [toDelete, setToDelete] = useState(null);
 
   const fetchRooms = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
+
     try {
-      // ✅ Fixed typo: accomodation → accommodations
       const res = await API.get("/accommodations");
-      setRooms(res.data);
+      setRooms(Array.isArray(res.data) ? res.data : []);
     } catch {
       setError("Could not load rooms.");
     } finally {
@@ -288,13 +39,19 @@ export default function Rooms() {
     }
   };
 
-  useEffect(() => { fetchRooms(); }, []);
+  useEffect(() => {
+    fetchRooms();
+  }, []);
 
   const handleDelete = async () => {
     if (!toDelete) return;
+
     try {
       await API.delete(`/accommodations/${toDelete._id}`);
-      setRooms(prev => prev.filter(r => r._id !== toDelete._id));
+
+      setRooms((prev) =>
+        prev.filter((r) => r._id !== toDelete._id)
+      );
     } catch {
       alert("Delete failed.");
     } finally {
@@ -302,173 +59,505 @@ export default function Rooms() {
     }
   };
 
-  const filtered = rooms.filter(r =>
-    !search || r.name?.toLowerCase().includes(search.toLowerCase())
+  const filtered = rooms.filter((room) =>
+    !search ||
+    room.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalRevenue = rooms.reduce((s, r) => s + (r.price || 0), 0);
-  const available    = rooms.filter(r => r.available !== false).length;
+  const totalRevenue = rooms.reduce(
+    (sum, room) => sum + (room.price || 0),
+    0
+  );
+
+  const available = rooms.filter(
+    (room) => room.isAvailable !== false
+  ).length;
 
   return (
-    <>
-      <style>{STYLES}</style>
-      <div className="rm-root">
+    <div className="space-y-6 text-gray-900">
 
-        {/* ── Header ── */}
-        <div className="rm-header">
-          <div>
-            <h1 className="rm-title">All <em>Rooms</em></h1>
-            <p className="rm-subtitle">{rooms.length} room{rooms.length !== 1 ? "s" : ""} listed</p>
-          </div>
-          <Link to="/admin/rooms/add" className="rm-add-btn">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-              <path d="M6 1v10M1 6h10"/>
-            </svg>
-            Add Room
-          </Link>
+      {/* ───────────────── HEADER ───────────────── */}
+      <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+
+        <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-green-700">
+            Accommodation
+          </p>
+
+          <h1 className="font-serif text-3xl tracking-tight text-gray-950 sm:text-4xl">
+            All{" "}
+            <em className="font-normal text-green-700">
+              Rooms
+            </em>
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {rooms.length} room
+            {rooms.length !== 1 ? "s" : ""} listed
+          </p>
         </div>
 
-        {/* ── Stats ── */}
-        <div className="rm-stats">
-          <div className="rm-stat">
-            <span className="rm-stat-label">Total Rooms</span>
-            <span className="rm-stat-val">{rooms.length}</span>
-          </div>
-          <div className="rm-stat">
-            <span className="rm-stat-label">Available</span>
-            <span className="rm-stat-val" style={{ color: "var(--green)" }}>{available}</span>
-          </div>
-          <div className="rm-stat">
-            <span className="rm-stat-label">Unavailable</span>
-            <span className="rm-stat-val" style={{ color: "var(--red)" }}>{rooms.length - available}</span>
-          </div>
-          <div className="rm-stat">
-            <span className="rm-stat-label">Avg. Rate</span>
-            <span className="rm-stat-val bronze">
-              {rooms.length ? `KES ${Math.round(totalRevenue / rooms.length).toLocaleString()}` : "—"}
-            </span>
-          </div>
-        </div>
-
-        {/* ── Toolbar ── */}
-        <div className="rm-toolbar">
-          <div className="rm-search-wrap">
-            <span className="rm-search-icon">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-                <circle cx="5.5" cy="5.5" r="4.5"/><path d="M9.5 9.5l2.5 2.5"/>
-              </svg>
-            </span>
-            <input
-              className="rm-search"
-              placeholder="Search rooms…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          <button
-            style={{ padding:"0.55rem 1rem", fontSize:"0.65rem", letterSpacing:"0.14em", textTransform:"uppercase", border:"1px solid var(--border)", background:"var(--white)", color:"var(--fog)", cursor:"pointer", fontFamily:"'Jost', sans-serif" }}
-            onClick={fetchRooms}
+        <Link
+          to="/admin/rooms/add"
+          className="inline-flex w-fit items-center gap-2 rounded bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-green-700"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
           >
-            Refresh
-          </button>
+            <path d="M6 1v10M1 6h10" />
+          </svg>
+
+          Add Room
+        </Link>
+      </div>
+
+      {/* ───────────────── STATS ───────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5 shadow-sm">
+          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+            Total Rooms
+          </span>
+
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-gray-950">
+            {rooms.length}
+          </div>
+
+          <p className="mt-1 text-xs text-gray-500">
+            Listed accommodation
+          </p>
         </div>
 
-        {/* ── Grid ── */}
-        <div className="rm-grid">
-          {loading ? (
-            <SkeletonCards />
-          ) : error ? (
-            <div className="rm-empty">
-              <div className="rm-empty-title">{error}</div>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="rm-empty">
-              <div className="rm-empty-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-                  <path d="M5 35V16L20 5l15 11v19H5z"/><rect x="14" y="22" width="5" height="13"/><rect x="21" y="22" width="5" height="13"/>
-                </svg>
-              </div>
-              <div className="rm-empty-title">No rooms found</div>
-            </div>
-          ) : (
-            filtered.map(room => (
-              <div key={room._id} className="rm-card">
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5 shadow-sm">
+          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+            Available
+          </span>
 
-                {/* Image */}
-                <div className="rm-card-img-wrap">
-                  <img
-                    src={room.images?.[0] || "https://via.placeholder.com/400x200"}
-                    alt={room.name}
-                    className="rm-card-img"
-                  />
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-green-700">
+            {available}
+          </div>
 
-                  {/* Status badge */}
-                  <div className={`rm-card-badge ${room.available === false ? "unavailable" : "available"}`}>
-                    <span className="rm-badge-dot" />
-                    {room.available === false ? "Unavailable" : "Available"}
-                  </div>
-
-                  {/* Hover overlay actions */}
-                  <div className="rm-card-overlay">
-                    <Link to={`/admin/rooms/edit/${room._id}`} className="rm-overlay-btn edit">
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z"/>
-                      </svg>
-                      Edit
-                    </Link>
-                    <button
-                      className="rm-overlay-btn delete"
-                      onClick={() => setToDelete(room)}
-                    >
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1.5 3h8M4 3V2h3v1M9 3l-.5 7h-5L3 3"/>
-                      </svg>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="rm-card-body">
-                  <div className="rm-card-name">{room.name}</div>
-                  <div className="rm-card-meta">
-                    <span className="rm-card-price">KES {room.price?.toLocaleString()}<span style={{ fontSize:"0.65rem", color:"var(--fog)", fontFamily:"'Jost', sans-serif" }}> /night</span></span>
-                    {room.occupancy && (
-                      <span className="rm-card-occ">👤 {room.occupancy}</span>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            ))
-          )}
+          <p className="mt-1 text-xs text-gray-500">
+            Currently bookable
+          </p>
         </div>
 
-        {/* Count bar */}
-        {!loading && !error && filtered.length > 0 && (
-          <div className="rm-count-bar">
-            Showing {filtered.length} of {rooms.length} room{rooms.length !== 1 ? "s" : ""}
-          </div>
-        )}
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5 shadow-sm">
+          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+            Unavailable
+          </span>
 
-        {/* ── Delete confirmation modal ── */}
-        {toDelete && (
-          <div className="rm-modal-backdrop" onClick={() => setToDelete(null)}>
-            <div className="rm-modal" onClick={e => e.stopPropagation()}>
-              <div className="rm-modal-title">Delete Room</div>
-              <p className="rm-modal-sub">
-                Are you sure you want to delete <strong>{toDelete.name}</strong>?
-                This action cannot be undone.
-              </p>
-              <div className="rm-modal-btns">
-                <button className="rm-modal-cancel" onClick={() => setToDelete(null)}>Cancel</button>
-                <button className="rm-modal-confirm" onClick={handleDelete}>Delete</button>
-              </div>
-            </div>
+          <div className="mt-3 text-3xl font-semibold tracking-tight text-red-600">
+            {rooms.length - available}
           </div>
-        )}
+
+          <p className="mt-1 text-xs text-gray-500">
+            Not currently bookable
+          </p>
+        </div>
+
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5 shadow-sm">
+          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+            Average Rate
+          </span>
+
+          <div className="mt-3 text-2xl font-semibold tracking-tight text-gray-950">
+            {rooms.length
+              ? `KES ${Math.round(
+                  totalRevenue / rooms.length
+                ).toLocaleString()}`
+              : "KES 0"}
+          </div>
+
+          <p className="mt-1 text-xs text-gray-500">
+            Average nightly rate
+          </p>
+        </div>
 
       </div>
-    </>
+
+      {/* ───────────────── TOOLBAR ───────────────── */}
+      <div className="flex flex-col gap-3 rounded border border-gray-200 bg-[#fffdf2] p-4 sm:flex-row sm:items-center sm:justify-between">
+
+        <div className="relative w-full sm:max-w-md">
+
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 13 13"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            >
+              <circle
+                cx="5.5"
+                cy="5.5"
+                r="4.5"
+              />
+              <path d="M9.5 9.5l2.5 2.5" />
+            </svg>
+          </span>
+
+          <input
+            className="w-full rounded border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-green-600 focus:ring-1 focus:ring-green-600"
+            placeholder="Search rooms..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <button
+          onClick={fetchRooms}
+          disabled={loading}
+          className="inline-flex w-fit items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-green-600 hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          >
+            <path d="M10.5 1.5A5 5 0 1 1 1.5 6" />
+            <path d="M10.5 1.5V5h-3.5" />
+          </svg>
+
+          {loading ? "Loading..." : "Refresh"}
+        </button>
+
+      </div>
+
+      {/* ───────────────── GRID ───────────────── */}
+      {loading ? (
+
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <SkeletonCards />
+        </div>
+
+      ) : error ? (
+
+        <div className="flex min-h-[300px] flex-col items-center justify-center rounded border border-gray-200 bg-white p-8 text-center">
+
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+            !
+          </div>
+
+          <p className="text-sm font-medium text-gray-900">
+            {error}
+          </p>
+
+          <button
+            onClick={fetchRooms}
+            className="mt-4 rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Try Again
+          </button>
+
+        </div>
+
+      ) : filtered.length === 0 ? (
+
+        <div className="flex min-h-[300px] flex-col items-center justify-center rounded border border-gray-200 bg-white p-8 text-center">
+
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-50 text-gray-400">
+            <svg
+              width="34"
+              height="34"
+              viewBox="0 0 40 40"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            >
+              <path d="M5 35V16L20 5l15 11v19H5z" />
+              <rect
+                x="14"
+                y="22"
+                width="5"
+                height="13"
+              />
+              <rect
+                x="21"
+                y="22"
+                width="5"
+                height="13"
+              />
+            </svg>
+          </div>
+
+          <p className="font-medium text-gray-900">
+            No rooms found
+          </p>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Try adjusting your search.
+          </p>
+
+        </div>
+
+      ) : (
+
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+
+          {filtered.map((room) => (
+
+            <div
+              key={room._id}
+              className="group overflow-hidden rounded border border-gray-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md"
+            >
+
+              {/* IMAGE */}
+              <div className="relative h-56 overflow-hidden bg-gray-100">
+
+                <img
+                  src={
+                    room.images?.[0] ||
+                    "https://via.placeholder.com/400x200"
+                  }
+                  alt={room.name}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />
+
+                {/* STATUS */}
+                <div className="absolute left-4 top-4">
+                  <span
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur ${
+                      room.isAvailable === false
+                        ? "border-red-200 bg-red-50/95 text-red-700"
+                        : "border-green-200 bg-green-50/95 text-green-700"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        room.isAvailable === false
+                          ? "bg-red-500"
+                          : "bg-green-500"
+                      }`}
+                    />
+
+                    {room.isAvailable === false
+                      ? "Unavailable"
+                      : "Available"}
+                  </span>
+                </div>
+
+                {/* ACTIONS */}
+                <div className="absolute bottom-4 left-4 right-4 flex translate-y-2 gap-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+
+                  <Link
+                    to={`/admin/rooms/edit/${room._id}`}
+                    className="flex flex-1 items-center justify-center gap-2 rounded bg-white px-3 py-2 text-xs font-medium text-gray-900 shadow-sm transition hover:bg-green-50 hover:text-green-700"
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 11 11"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z" />
+                    </svg>
+
+                    Edit
+                  </Link>
+
+                  <button
+                    onClick={() => setToDelete(room)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded bg-red-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-red-700"
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 11 11"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M1.5 3h8M4 3V2h3v1M9 3l-.5 7h-5L3 3" />
+                    </svg>
+
+                    Delete
+                  </button>
+
+                </div>
+
+              </div>
+
+              {/* BODY */}
+              <div className="p-5">
+
+                <div className="flex items-start justify-between gap-4">
+
+                  <div className="min-w-0">
+
+                    <h2 className="truncate font-serif text-lg font-medium text-gray-950">
+                      {room.name || "Unnamed Room"}
+                    </h2>
+
+                    {room.description && (
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500">
+                        {room.description}
+                      </p>
+                    )}
+
+                  </div>
+
+                  <div className="shrink-0 text-right">
+
+                    <div className="text-base font-semibold text-gray-950">
+                      KES{" "}
+                      {room.price?.toLocaleString() ?? "—"}
+                    </div>
+
+                    <div className="text-[11px] text-gray-400">
+                      per night
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {/* DETAILS */}
+                <div className="mt-5 flex items-center gap-4 border-t border-gray-100 pt-4">
+
+                  {room.occupancy && (
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                      >
+                        <circle cx="8" cy="5" r="3" />
+                        <path d="M2 14c0-3.5 2.5-5 6-5s6 1.5 6 5" />
+                      </svg>
+
+                      <span>
+                        {room.occupancy} guest
+                        {room.occupancy !== 1 ? "s" : ""}
+                      </span>
+
+                    </div>
+                  )}
+
+                  {room.category && (
+                    <div className="rounded-full bg-gray-50 px-2.5 py-1 text-[11px] text-gray-500">
+                      {room.category}
+                    </div>
+                  )}
+
+                </div>
+
+              </div>
+
+            </div>
+
+          ))}
+
+        </div>
+      )}
+
+      {/* ───────────────── COUNT ───────────────── */}
+      {!loading && !error && filtered.length > 0 && (
+        <div className="border-t border-gray-200 pt-4">
+          <p className="text-xs text-gray-500">
+            Showing{" "}
+            <span className="font-medium text-gray-700">
+              {filtered.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-gray-700">
+              {rooms.length}
+            </span>{" "}
+            room{rooms.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+      )}
+
+      {/* ───────────────── DELETE MODAL ───────────────── */}
+      {toDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          onClick={() => setToDelete(null)}
+        >
+
+          <div
+            className="w-full max-w-md rounded-lg border border-gray-200 bg-[#fffdf2] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              >
+                <path d="M3 5h14M7 5V3h6v2M15 5l-1 12H6L5 5" />
+                <path d="M8 9v5M12 9v5" />
+              </svg>
+            </div>
+
+            <h2 className="font-serif text-2xl text-gray-950">
+              Delete Room
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              Are you sure you want to permanently delete{" "}
+              <strong className="font-semibold text-gray-900">
+                {toDelete.name}
+              </strong>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+
+              <button
+                onClick={() => setToDelete(null)}
+                className="rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-gray-900 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="rounded bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+              >
+                Delete Room
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+    </div>
   );
 }

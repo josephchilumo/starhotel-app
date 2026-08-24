@@ -1,27 +1,22 @@
 import React from 'react'
-import Navbar from '../components/Navbar'
 import CTA from '../components/CTA'
 import Offering from '../components/Offering'
 import Gallery from '../components/Gallery'
 import GuestReviews from '../components/GuestReviews'
 import RoomReview from '../components/RoomReview'
 import NewsLetter from '../components/NewsLetter'
-import Footer from '../components/Footer'
 import Hero from '../components/Hero'
 
 const Homepage = () => {
   return (
-    <div>
-      <Navbar /> 
+    <div className="bg-[#fafaf8] text-gray-900 transition-colors duration-1500 ease-in-out">
       <Hero />
       <CTA />
       <Offering />
-      <Gallery />
       <GuestReviews />
       <RoomReview />
+      <Gallery />
       <NewsLetter/>
-      <Footer />
-
     </div>
   )
 }

@@ -1,14 +1,10 @@
-import React from "react";  
-import Navbar from "../components/Navbar";
+import React from "react";
 import RoomView from "../Rooms/RoomView";
-import Footer from "../components/Footer";
 
 const AccomodationPage = () => {
   return (
-    <div>
-      <Navbar />
+    <div className="min-h-screen bg-[#fafaf8] text-gray-900 transition-colors duration-1500 ease-in-out">
       <RoomView />
-      <Footer />
     </div>
   );
 };

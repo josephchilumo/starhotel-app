@@ -16,18 +16,11 @@ const BASE_URL = normalizedApiUrl
 const API = axios.create({
   baseURL: BASE_URL,
 });
-console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-console.log("BASE_URL:", BASE_URL);
 
-// Attach token automatically
-API.interceptors.request.use((req) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  if (user?.token) {
-    req.headers.Authorization = `Bearer ${user.token}`;
-  }
-
-  return req;
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("starhotel_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
 export default API;

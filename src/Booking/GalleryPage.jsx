@@ -2,286 +2,96 @@ import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../utils/axios";
 
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400;1,600&family=Jost:wght@300;400;500&display=swap');
-
-  :root {
-    --ink:       #0e0f0d;
-    --ink2:      #171916;
-    --bronze:    #a0743c;
-    --bronze-lt: #c49558;
-    --cream:     #f0ece4;
-    --fog:       rgba(240,236,228,0.42);
-    --border:    rgba(255,255,255,0.07);
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  .gp-root {
-    min-height: 100vh;
-    background: var(--ink);
-    font-family: 'Jost', sans-serif;
-    color: var(--cream);
-  }
-
-  .gp-hero {
-    padding: 7rem 5vw 4rem;
-    display: flex; align-items: flex-end;
-    justify-content: space-between; gap: 2rem; flex-wrap: wrap;
-  }
-  .gp-eyebrow { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
-  .gp-eyebrow-line { width: 28px; height: 1px; background: var(--bronze); }
-  .gp-eyebrow-text {
-    font-size: 0.62rem; letter-spacing: 0.28em;
-    text-transform: uppercase; color: var(--bronze-lt);
-  }
-  .gp-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(3rem, 7vw, 5.5rem);
-    font-weight: 300; line-height: 1.02;
-    letter-spacing: -0.025em; color: var(--cream);
-  }
-  .gp-title em { font-style: italic; color: var(--bronze-lt); }
-  .gp-count-display {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(3.5rem, 8vw, 6rem);
-    font-weight: 300; font-style: italic;
-    color: rgba(160,116,60,0.12); line-height: 1;
-    user-select: none; align-self: flex-start; margin-top: 0.5rem;
-  }
-
-  .gp-filters {
-    padding: 0 5vw 2.5rem;
-    display: flex; gap: 0.5rem; flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-  }
-  .gp-filter-btn {
-    padding: 0.45rem 1.1rem;
-    font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
-    background: transparent; border: 1px solid var(--border);
-    color: var(--fog); cursor: pointer; font-family: 'Jost', sans-serif;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-  }
-  .gp-filter-btn:hover { color: var(--cream); border-color: rgba(255,255,255,0.2); }
-  .gp-filter-btn.active { background: var(--bronze); color: var(--cream); border-color: var(--bronze); }
-
-  .gp-grid {
-    padding: 3px 5vw; columns: 3; column-gap: 3px;
-  }
-  @media (max-width: 900px) { .gp-grid { columns: 2; } }
-  @media (max-width: 520px) { .gp-grid { columns: 1; } }
-
-  .gp-cell {
-    break-inside: avoid; position: relative;
-    overflow: hidden; margin-bottom: 3px; cursor: pointer;
-  }
-  .gp-cell-img {
-    width: 100%; display: block; object-fit: cover;
-    transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-  }
-  .gp-cell:hover .gp-cell-img { transform: scale(1.05); }
-  .gp-cell-base {
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(10,9,7,0.85) 0%, rgba(10,9,7,0.1) 45%, transparent 100%);
-  }
-  .gp-cell-hover {
-    position: absolute; inset: 0;
-    background: rgba(10,9,7,0.35); opacity: 0; transition: opacity 0.35s;
-  }
-  .gp-cell:hover .gp-cell-hover { opacity: 1; }
-  .gp-cell-content {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 1.25rem 1.5rem;
-    transform: translateY(8px); transition: transform 0.35s ease;
-  }
-  .gp-cell:hover .gp-cell-content { transform: translateY(0); }
-  .gp-cell-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.15rem; font-style: italic; font-weight: 300;
-    color: var(--cream); line-height: 1.2;
-    margin-bottom: 0; transition: margin-bottom 0.3s;
-  }
-  .gp-cell:hover .gp-cell-title { margin-bottom: 0.35rem; }
-  .gp-cell-cat {
-    font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--bronze-lt); opacity: 0; transform: translateY(4px);
-    transition: opacity 0.3s ease 0.05s, transform 0.3s ease 0.05s;
-  }
-  .gp-cell:hover .gp-cell-cat { opacity: 1; transform: translateY(0); }
-  .gp-cell-index {
-    position: absolute; top: 0.9rem; left: 1.1rem;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.7rem; font-style: italic;
-    color: rgba(255,255,255,0.3); transition: color 0.3s;
-  }
-  .gp-cell:hover .gp-cell-index { color: var(--bronze-lt); }
-
-  .gp-strip {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.5rem 5vw; border-top: 1px solid var(--border);
-    flex-wrap: wrap; gap: 1rem;
-  }
-  .gp-strip-text {
-    font-size: 0.62rem; letter-spacing: 0.2em;
-    text-transform: uppercase; color: rgba(240,236,228,0.2);
-  }
-
-  /* ── Skeleton loader ── */
-  .gp-skel-grid { padding: 3px 5vw; columns: 3; column-gap: 3px; }
-  @media (max-width: 900px) { .gp-skel-grid { columns: 2; } }
-  @media (max-width: 520px) { .gp-skel-grid { columns: 1; } }
-  .gp-skel-cell {
-    break-inside: avoid; margin-bottom: 3px;
-    background: rgba(255,255,255,0.04);
-    animation: gpShimmer 1.4s ease-in-out infinite;
-  }
-  @keyframes gpShimmer { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
-
-  /* ── Error state ── */
-  .gp-error {
-    padding: 6rem 5vw; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 1rem;
-  }
-  .gp-error-icon { color: rgba(240,236,228,0.08); }
-  .gp-error-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.4rem; font-style: italic;
-    color: rgba(240,236,228,0.3);
-  }
-  .gp-error-sub { font-size: 0.72rem; color: rgba(240,236,228,0.2); }
-  .gp-retry-btn {
-    margin-top: 0.5rem; padding: 0.6rem 1.5rem;
-    font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
-    background: var(--bronze); color: var(--cream);
-    border: none; cursor: pointer; font-family: 'Jost', sans-serif;
-    transition: background 0.2s;
-  }
-  .gp-retry-btn:hover { background: #b8843f; }
-
-  /* ── Lightbox ── */
-  .gp-lb-backdrop {
-    position: fixed; inset: 0; z-index: 1000;
-    background: rgba(8,7,6,0.97);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    display: flex; flex-direction: column;
-  }
-  .gp-lb-topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
-  }
-  .gp-lb-meta { display: flex; align-items: center; gap: 1.25rem; }
-  .gp-lb-counter {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.95rem; font-style: italic; color: var(--bronze-lt); letter-spacing: 0.06em;
-  }
-  .gp-lb-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem; font-weight: 300; font-style: italic; color: rgba(240,236,228,0.6);
-  }
-  .gp-lb-close {
-    width: 36px; height: 36px; border: 1px solid var(--border);
-    background: transparent; color: var(--fog);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 1.1rem;
-    transition: background 0.2s, color 0.2s, border-color 0.2s; font-family: 'Jost', sans-serif;
-  }
-  .gp-lb-close:hover { background: var(--bronze); color: var(--cream); border-color: var(--bronze); }
-  .gp-lb-stage {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    padding: 2rem; position: relative; overflow: hidden; min-height: 0;
-  }
-  .gp-lb-img {
-    max-width: 100%; max-height: 100%; object-fit: contain; display: block;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.7);
-  }
-  .gp-lb-nav {
-    position: absolute; top: 50%; transform: translateY(-50%);
-    width: 44px; height: 44px; border: 1px solid var(--border);
-    background: rgba(14,15,13,0.7); color: var(--fog);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 1.2rem;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-    backdrop-filter: blur(4px); font-family: 'Jost', sans-serif;
-  }
-  .gp-lb-nav:hover { background: var(--bronze); color: var(--cream); border-color: var(--bronze); }
-  .gp-lb-nav.prev { left: 1.5rem; }
-  .gp-lb-nav.next { right: 1.5rem; }
-  .gp-lb-bottom {
-    padding: 1rem 2rem; border-top: 1px solid var(--border);
-    display: flex; align-items: center; gap: 0.75rem;
-    overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
-  }
-  .gp-lb-bottom::-webkit-scrollbar { display: none; }
-  .gp-lb-thumb {
-    width: 52px; height: 36px; object-fit: cover; flex-shrink: 0;
-    opacity: 0.35; cursor: pointer; border: 1.5px solid transparent;
-    transition: opacity 0.2s, border-color 0.2s;
-  }
-  .gp-lb-thumb.active { opacity: 1; border-color: var(--bronze); }
-  .gp-lb-thumb:hover  { opacity: 0.7; }
-`;
-
-// Varied heights for masonry visual rhythm
 const HEIGHTS = [340, 480, 360, 440, 320, 420, 360, 400, 460, 380, 300, 500];
 
-// ─────────────────────────────────────────────
-// Normalise raw API image into a consistent shape.
-// Handles the common field name variations your
-// backend might use.
-// ─────────────────────────────────────────────
 function normalise(raw, index) {
   return {
-    // image URL — try common field names
-    src:   raw.url      ?? raw.src    ?? raw.image    ?? raw.imageUrl ?? "",
-    // display title
-    title: raw.title    ?? raw.name   ?? raw.caption  ?? `Photo ${index + 1}`,
-    // category for filtering
-    cat:   raw.category ?? raw.cat    ?? raw.type     ?? "General",
-    // unique key
-    _id:   raw._id      ?? raw.id     ?? String(index),
-    // masonry height (cycles through preset values)
-    h:     HEIGHTS[index % HEIGHTS.length],
+    src:
+      raw.url ??
+      raw.src ??
+      raw.image ??
+      raw.imageUrl ??
+      "",
+
+    title:
+      raw.title ??
+      raw.name ??
+      raw.caption ??
+      `Photo ${index + 1}`,
+
+    description: raw.description ?? raw.caption ?? "",
+
+    cat:
+      raw.category ??
+      raw.cat ??
+      raw.type ??
+      "General",
+
+    _id:
+      raw._id ??
+      raw.id ??
+      String(index),
+
+    h: HEIGHTS[index % HEIGHTS.length],
   };
 }
 
 const cellVariants = {
-  hidden:  { opacity: 0, scale: 0.97 },
+  hidden: {
+    opacity: 0,
+    y: 25,
+  },
+
   visible: (i) => ({
-    opacity: 1, scale: 1,
-    transition: { duration: 0.55, delay: i * 0.07, ease: [0.25, 0.46, 0.45, 0.94] },
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      delay: i * 0.06,
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
   }),
 };
 
 function SkeletonGrid() {
   return (
-    <div className="gp-skel-grid">
+    <div className="mx-auto mt-10 columns-1 gap-4 sm:columns-2 lg:columns-3">
       {HEIGHTS.slice(0, 9).map((h, i) => (
-        <div key={i} className="gp-skel-cell" style={{ height: h }} />
+        <div
+          key={i}
+          style={{ height: h }}
+          className="mb-4 animate-pulse break-inside-avoid rounded bg-gray-200"
+        />
       ))}
     </div>
   );
 }
 
 export default function GalleryPage() {
-  const [images,   setImages]   = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState("");
-  const [filter,   setFilter]   = useState("All");
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
 
-  // ── Fetch from backend ──────────────────────
   const fetchImages = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
+
     try {
       const res = await API.get("/gallery");
 
-      // Guard against wrapped response shapes
       const raw = res.data;
-      const list = Array.isArray(raw)          ? raw
-                 : Array.isArray(raw?.images)   ? raw.images
-                 : Array.isArray(raw?.gallery)  ? raw.gallery
-                 : Array.isArray(raw?.data)     ? raw.data
-                 : [];
+
+      const list = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.images)
+        ? raw.images
+        : Array.isArray(raw?.gallery)
+        ? raw.gallery
+        : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
 
       setImages(list.map(normalise));
     } catch {
@@ -291,208 +101,379 @@ export default function GalleryPage() {
     }
   };
 
-  useEffect(() => { fetchImages(); }, []);
+  useEffect(() => {
+    fetchImages();
+  }, []);
 
-  // ── Derive categories dynamically from API data ──
   const categories = [
     "All",
-    ...Array.from(new Set(images.map(img => img.cat))).filter(Boolean).sort(),
+    ...Array.from(
+      new Set(images.map((img) => img.cat))
+    )
+      .filter(Boolean)
+      .sort(),
   ];
 
-  // Reset to All if current filter no longer exists after re-fetch
   useEffect(() => {
-    if (filter !== "All" && !categories.includes(filter)) setFilter("All");
+    if (
+      filter !== "All" &&
+      !categories.includes(filter)
+    ) {
+      setFilter("All");
+    }
   }, [images]);
 
-  const filtered = filter === "All"
-    ? images
-    : images.filter(img => img.cat === filter);
+  const filtered =
+    filter === "All"
+      ? images
+      : images.filter((img) => img.cat === filter);
 
-  // ── Lightbox controls ───────────────────────
-  const openLightbox  = (idx) => setSelected(idx);
-  const closeLightbox = ()    => setSelected(null);
+  const openLightbox = (index) => {
+    setSelected(index);
+  };
+
+  const closeLightbox = () => {
+    setSelected(null);
+  };
 
   const prev = useCallback(() => {
-    setSelected(i => (i - 1 + filtered.length) % filtered.length);
+    setSelected((current) => {
+      if (current === null || filtered.length === 0) {
+        return current;
+      }
+
+      return (
+        (current - 1 + filtered.length) %
+        filtered.length
+      );
+    });
   }, [filtered.length]);
 
   const next = useCallback(() => {
-    setSelected(i => (i + 1) % filtered.length);
+    setSelected((current) => {
+      if (current === null || filtered.length === 0) {
+        return current;
+      }
+
+      return (current + 1) % filtered.length;
+    });
   }, [filtered.length]);
 
   useEffect(() => {
     if (selected === null) return;
+
     const onKey = (e) => {
-      if (e.key === "ArrowLeft")  prev();
+      if (e.key === "ArrowLeft") prev();
       if (e.key === "ArrowRight") next();
-      if (e.key === "Escape")     closeLightbox();
+      if (e.key === "Escape") closeLightbox();
     };
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
   }, [selected, prev, next]);
 
   return (
-    <>
-      <style>{STYLES}</style>
-      <div className="gp-root">
+    <main className="min-h-screen bg-[#fafaf8] px-5 py-14 text-gray-900 sm:px-8">
 
-        {/* ── Hero ── */}
-        <motion.div
-          className="gp-hero"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.75, ease: "easeOut" }}
-        >
+      {/* HERO */}
+      <motion.section
+        initial={{ opacity: 0, y: 25 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.75 }}
+        className="mx-auto max-w-6xl"
+      >
+        <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+
           <div>
-            <div className="gp-eyebrow">
-              <div className="gp-eyebrow-line" />
-              <span className="gp-eyebrow-text">Visual Archive</span>
-            </div>
-            <h1 className="gp-title">Our <em>Gallery</em></h1>
-          </div>
-          <div className="gp-count-display" aria-hidden="true">
-            {loading ? "…" : String(filtered.length).padStart(2, "0")}
-          </div>
-        </motion.div>
+            
 
-        {/* ── Category filters — built from API data ── */}
-        {!loading && !error && (
-          <div className="gp-filters">
-            {categories.map(cat => (
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              Visual{" "}
+              <em className="font-serif font-normal">
+                Archive
+              </em>
+            </h1>
+
+            <p className="mt-4 max-w-xl text-sm leading-7 text-gray-600">
+              Explore the spaces, moments, and experiences
+              that make StarHotel a destination worth
+              remembering.
+            </p>
+          </div>
+
+        </div>
+      </motion.section>
+
+      {/* FILTERS */}
+      {!loading && !error && categories.length > 1 && (
+        <div className="mx-auto mt-10 flex max-w-6xl flex-wrap gap-2 border-y border-gray-200 py-4">
+
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setFilter(cat);
+                setSelected(null);
+              }}
+              className={`rounded px-4 py-2 text-xs uppercase tracking-[0.12em] transition-all duration-300 ${
+                filter === cat
+                  ? "bg-gray-900 text-white"
+                  : "border border-gray-300 text-gray-700 hover:border-gray-900 hover:text-gray-900"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+
+        </div>
+      )}
+
+      {/* LOADING */}
+      {loading && <SkeletonGrid />}
+
+      {/* ERROR */}
+      {!loading && error && (
+        <div className="mx-auto mt-12 max-w-xl rounded border border-red-200 bg-red-50 px-6 py-12 text-center">
+
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-red-200 text-red-500">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            >
+              <rect
+                x="4"
+                y="4"
+                width="40"
+                height="40"
+                rx="3"
+              />
+              <path d="M24 14v12" />
+              <circle cx="24" cy="33" r="1" fill="currentColor" />
+            </svg>
+          </div>
+
+          <h2 className="text-lg font-semibold">
+            Could not load gallery
+          </h2>
+
+          <p className="mt-2 text-sm text-red-600">
+            Check your connection and try again.
+          </p>
+
+          <button
+            onClick={fetchImages}
+            className="mt-6 rounded bg-gray-900 px-5 py-2.5 text-xs font-medium uppercase tracking-wider text-white transition hover:bg-gray-700"
+          >
+            Try Again
+          </button>
+
+        </div>
+      )}
+
+      {/* EMPTY */}
+      {!loading && !error && filtered.length === 0 && (
+        <div className="mx-auto mt-12 max-w-xl rounded border border-gray-200 bg-[#fffaf0] px-6 py-16 text-center">
+
+          <div className="text-4xl text-gray-300">
+            ◇
+          </div>
+
+          <h2 className="mt-4 text-lg font-semibold">
+            No images found
+          </h2>
+
+          <p className="mt-2 text-sm text-gray-500">
+            There are currently no images in this category.
+          </p>
+
+        </div>
+      )}
+
+      {/* MASONRY */}
+      {!loading && !error && filtered.length > 0 && (
+        <section className="mx-auto mt-10 max-w-6xl">
+
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            className="columns-1 gap-4 sm:columns-2 lg:columns-3"
+          >
+
+            <AnimatePresence mode="popLayout">
+
+              {filtered.map((img, i) => (
+                <motion.article
+                  key={img._id}
+                  custom={i}
+                  variants={cellVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit={{
+                    opacity: 0,
+                    scale: 0.95,
+                  }}
+                  onClick={() => openLightbox(i)}
+                  className="group relative mb-4 cursor-pointer break-inside-avoid overflow-hidden rounded border border-gray-200 bg-[#fffaf0]"
+                >
+
+                  <img
+                    src={img.src}
+                    alt={img.title}
+                    style={{ height: img.h }}
+                    className="w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    loading="lazy"
+                  />
+
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                  {/* Number */}
+                  <span className="absolute right-4 top-4 text-xs tracking-[0.15em] text-white opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+
+                  {/* Bottom info */}
+                  <div className="absolute bottom-0 left-0 right-0 translate-y-3 p-5 text-white opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-gray-300">
+                      {img.cat}
+                    </div>
+
+                    <div className="mt-1 text-lg font-medium">
+                      {img.title}
+                    </div>
+
+                    {img.description && <p className="mt-1 text-sm text-gray-200">{img.description}</p>}
+
+                  </div>
+
+                </motion.article>
+              ))}
+
+            </AnimatePresence>
+
+          </motion.div>
+
+        </section>
+      )}
+
+      {/* LIGHTBOX */}
+      <AnimatePresence>
+        {selected !== null && filtered[selected] && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 p-4 sm:p-8"
+          >
+
+            {/* Header */}
+            <div className="mx-auto flex max-w-7xl items-center justify-between text-white">
+
+              <div>
+                <span className="ml-4 text-sm">
+                  {filtered[selected].title}
+                </span>
+                {filtered[selected].description && <p className="mt-1 text-sm text-gray-300">{filtered[selected].description}</p>}
+              </div>
+
               <button
-                key={cat}
-                className={`gp-filter-btn${filter === cat ? " active" : ""}`}
-                onClick={() => { setFilter(cat); setSelected(null); }}
+                onClick={closeLightbox}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-xl text-gray-300 transition hover:bg-white hover:text-black"
+                aria-label="Close"
               >
-                {cat}
+                ×
               </button>
-            ))}
-          </div>
-        )}
 
-        {/* ── Loading ── */}
-        {loading && <SkeletonGrid />}
-
-        {/* ── Error ── */}
-        {!loading && error && (
-          <div className="gp-error">
-            <div className="gp-error-icon">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="4" width="40" height="40" rx="3"/>
-                <path d="M4 34l12-12 9 9 6-6 13 13"/>
-                <circle cx="16" cy="16" r="4"/>
-                <path d="M24 24l6-6M30 24l-6-6"/>
-              </svg>
             </div>
-            <div className="gp-error-title">Could not load gallery</div>
-            <div className="gp-error-sub">Check your connection or try again</div>
-            <button className="gp-retry-btn" onClick={fetchImages}>Retry</button>
-          </div>
-        )}
 
-        {/* ── Masonry grid ── */}
-        {!loading && !error && (
-          <>
-            <motion.div className="gp-grid" initial="hidden" animate="visible">
-              <AnimatePresence>
+            {/* Main image */}
+            <div className="relative mx-auto mt-6 flex h-[70vh] max-w-6xl items-center justify-center">
+
+              <AnimatePresence mode="wait">
+
+                <motion.img
+                  key={selected}
+                  src={filtered[selected].src}
+                  alt={filtered[selected].title}
+                  initial={{
+                    opacity: 0,
+                    scale: 0.97,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: 1.03,
+                  }}
+                  transition={{
+                    duration: 0.3,
+                  }}
+                  className="max-h-full max-w-full rounded object-contain"
+                />
+
+              </AnimatePresence>
+
+              {filtered.length > 1 && (
+                <>
+                  <button
+                    onClick={prev}
+                    className="absolute left-2 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 text-2xl text-white backdrop-blur-sm transition hover:bg-white hover:text-black sm:left-5"
+                    aria-label="Previous"
+                  >
+                    ‹
+                  </button>
+
+                  <button
+                    onClick={next}
+                    className="absolute right-2 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 text-2xl text-white backdrop-blur-sm transition hover:bg-white hover:text-black sm:right-5"
+                    aria-label="Next"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+
+            </div>
+
+            {/* Thumbnails */}
+            {filtered.length > 1 && (
+              <div className="mx-auto mt-5 flex max-w-6xl gap-2 overflow-x-auto pb-2">
+
                 {filtered.map((img, i) => (
-                  <motion.div
+                  <button
                     key={img._id}
-                    className="gp-cell"
-                    custom={i}
-                    variants={cellVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    onClick={() => openLightbox(i)}
+                    onClick={() => setSelected(i)}
+                    className={`h-14 w-20 flex-shrink-0 overflow-hidden rounded border transition ${
+                      i === selected
+                        ? "border-white"
+                        : "border-white/20 opacity-50 hover:opacity-100"
+                    }`}
                   >
                     <img
                       src={img.src}
                       alt={img.title}
-                      className="gp-cell-img"
-                      style={{ height: `${img.h}px` }}
-                      onError={e => { e.target.style.opacity = "0.15"; }}
+                      className="h-full w-full object-cover"
                     />
-                    <div className="gp-cell-base" />
-                    <div className="gp-cell-hover" />
-                    <span className="gp-cell-index">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div className="gp-cell-content">
-                      <div className="gp-cell-title">{img.title}</div>
-                      <div className="gp-cell-cat">{img.cat}</div>
-                    </div>
-                  </motion.div>
+                  </button>
                 ))}
-              </AnimatePresence>
-            </motion.div>
 
-            <div className="gp-strip">
-              <span className="gp-strip-text">
-                {filtered.length} image{filtered.length !== 1 ? "s" : ""} · StarHotel Mombasa
-              </span>
-            </div>
-          </>
+              </div>
+            )}
+
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* ── Lightbox ── */}
-        <AnimatePresence>
-          {selected !== null && (
-            <motion.div
-              className="gp-lb-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="gp-lb-topbar">
-                <div className="gp-lb-meta">
-                  <span className="gp-lb-counter">
-                    {String(selected + 1).padStart(2, "0")} / {String(filtered.length).padStart(2, "0")}
-                  </span>
-                  <span className="gp-lb-title">{filtered[selected]?.title}</span>
-                </div>
-                <button className="gp-lb-close" onClick={closeLightbox} aria-label="Close">✕</button>
-              </div>
-
-              <div className="gp-lb-stage">
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={selected}
-                    src={filtered[selected]?.src}
-                    alt={filtered[selected]?.title}
-                    className="gp-lb-img"
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.03 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                  />
-                </AnimatePresence>
-
-                {filtered.length > 1 && (
-                  <>
-                    <button className="gp-lb-nav prev" onClick={prev} aria-label="Previous">‹</button>
-                    <button className="gp-lb-nav next" onClick={next} aria-label="Next">›</button>
-                  </>
-                )}
-              </div>
-
-              <div className="gp-lb-bottom">
-                {filtered.map((img, i) => (
-                  <img
-                    key={img._id}
-                    src={img.src}
-                    alt={img.title}
-                    className={`gp-lb-thumb${i === selected ? " active" : ""}`}
-                    onClick={() => setSelected(i)}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-      </div>
-    </>
+    </main>
   );
 }

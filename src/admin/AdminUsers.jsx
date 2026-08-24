@@ -1,319 +1,64 @@
 import React, { useEffect, useState, useMemo } from "react";
 import API from "../utils/axios";
 
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
-
-  :root {
-    --bark:      #2b2318;
-    --bark-lt:   #4a3f33;
-    --bronze:    #a0743c;
-    --bronze-lt: #c49558;
-    --fog:       #9c9188;
-    --border:    rgba(43,35,24,0.08);
-    --parch:     #f5f0e8;
-    --white:     #ffffff;
-    --green:     #27ae60;
-    --red:       #c0392b;
-    --amber:     #e67e22;
-    --blue:      #2980b9;
-  }
-
-  .au-root { font-family: 'Jost', sans-serif; color: var(--bark); }
-
-  /* ── Header ── */
-  .au-header {
-    display: flex; align-items: flex-end;
-    justify-content: space-between; gap: 1rem;
-    margin-bottom: 1.75rem; flex-wrap: wrap;
-  }
-  .au-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2rem; font-weight: 300; line-height: 1; letter-spacing: -0.02em;
-  }
-  .au-title em { font-style: italic; color: var(--bronze); }
-  .au-subtitle { font-size: 0.72rem; color: var(--fog); margin-top: 0.3rem; }
-
-  .au-refresh-btn {
-    display: flex; align-items: center; gap: 0.5rem;
-    font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--fog); background: none; border: none; cursor: pointer;
-    font-family: 'Jost', sans-serif; transition: color 0.2s;
-  }
-  .au-refresh-btn:hover { color: var(--bronze); }
-
-  /* ── Stats ── */
-  .au-stats {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 1px; background: var(--border); border: 1px solid var(--border);
-    margin-bottom: 1.5rem;
-  }
-  @media (max-width: 700px) { .au-stats { grid-template-columns: repeat(2,1fr); } }
-
-  .au-stat {
-    background: var(--white); padding: 1.1rem 1.4rem;
-    display: flex; flex-direction: column; gap: 0.25rem;
-    position: relative;
-  }
-  .au-stat::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 2px; background: var(--border); transition: background 0.3s;
-  }
-  .au-stat:hover::before { background: var(--bronze); }
-  .au-stat-label {
-    font-size: 0.56rem; letter-spacing: 0.2em;
-    text-transform: uppercase; color: var(--fog);
-  }
-  .au-stat-val {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.8rem; font-weight: 300; line-height: 1;
-    letter-spacing: -0.02em; color: var(--bark);
-  }
-  .au-stat-val.bronze { color: var(--bronze); }
-  .au-stat-val.green  { color: var(--green);  }
-  .au-stat-val.blue   { color: var(--blue);   }
-
-  /* ── Toolbar ── */
-  .au-toolbar {
-    display: flex; align-items: center; gap: 0.75rem;
-    margin-bottom: 1rem; flex-wrap: wrap;
-  }
-  .au-search-wrap {
-    flex: 1; min-width: 180px;
-    display: flex; align-items: center; gap: 0.6rem;
-    background: var(--white); border: 1px solid var(--border);
-    padding: 0.55rem 0.9rem;
-  }
-  .au-search-icon { color: var(--fog); flex-shrink: 0; }
-  .au-search {
-    flex: 1; background: none; border: none; outline: none;
-    font-size: 0.78rem; color: var(--bark);
-    font-family: 'Jost', sans-serif; caret-color: var(--bronze);
-  }
-  .au-search::placeholder { color: rgba(43,35,24,0.25); }
-
-  .au-filter {
-    padding: 0.55rem 1rem;
-    font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase;
-    border: 1px solid var(--border); background: var(--white); color: var(--fog);
-    cursor: pointer; font-family: 'Jost', sans-serif;
-    transition: border-color 0.2s, color 0.2s, background 0.2s;
-  }
-  .au-filter:hover  { color: var(--bark); border-color: rgba(43,35,24,0.2); }
-  .au-filter.active { background: var(--bark); color: #f0ece4; border-color: var(--bark); }
-
-  /* ── Table card ── */
-  .au-card {
-    background: var(--white); border: 1px solid var(--border); overflow: hidden;
-  }
-  .au-table-wrap { overflow-x: auto; }
-
-  table.au-table {
-    width: 100%; border-collapse: collapse; font-size: 0.78rem;
-  }
-  .au-table thead tr {
-    border-bottom: 1px solid var(--border); background: var(--parch);
-  }
-  .au-table th {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.57rem; font-weight: 500;
-    letter-spacing: 0.18em; text-transform: uppercase;
-    color: rgba(43,35,24,0.4); text-align: left; white-space: nowrap;
-  }
-  .au-table tbody tr {
-    border-bottom: 1px solid var(--border); transition: background 0.2s;
-  }
-  .au-table tbody tr:last-child { border-bottom: none; }
-  .au-table tbody tr:hover { background: #faf8f4; }
-  .au-table td { padding: 0.9rem 1.25rem; vertical-align: middle; }
-
-  /* User cell */
-  .au-user-cell { display: flex; align-items: center; gap: 0.75rem; }
-  .au-avatar {
-    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-    background: rgba(160,116,60,0.12);
-    border: 1.5px solid rgba(160,116,60,0.25);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.9rem; font-style: italic; color: var(--bronze);
-    position: relative;
-  }
-  .au-avatar-status {
-    position: absolute; bottom: 0; right: 0;
-    width: 9px; height: 9px; border-radius: 50%;
-    border: 1.5px solid var(--white);
-  }
-  .au-avatar-status.active   { background: var(--green); }
-  .au-avatar-status.inactive { background: var(--fog); }
-  .au-avatar-status.suspended{ background: var(--red); }
-
-  .au-user-name  { font-size: 0.82rem; font-weight: 400; color: var(--bark); }
-  .au-user-email { font-size: 0.65rem; color: var(--fog); }
-
-  /* Role badge */
-  .au-role {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    padding: 0.22rem 0.65rem;
-    font-size: 0.57rem; letter-spacing: 0.14em; text-transform: uppercase;
-    font-weight: 500;
-  }
-  .au-role.admin { background: rgba(160,116,60,0.12); color: var(--bronze); }
-  .au-role.user  { background: rgba(43,35,24,0.06);   color: var(--fog);    }
-  .au-role-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
-
-  /* Join date */
-  .au-date { font-size: 0.72rem; color: var(--fog); }
-
-  /* Bookings count */
-  .au-bookings-count {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem; color: var(--bronze);
-  }
-
-  /* Actions */
-  .au-row-actions { display: flex; align-items: center; gap: 0.5rem; }
-  .au-action-btn {
-    height: 28px; padding: 0 0.7rem;
-    border: 1px solid var(--border); background: none;
-    display: flex; align-items: center; justify-content: center; gap: 0.35rem;
-    cursor: pointer; color: var(--fog);
-    font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
-    font-family: 'Jost', sans-serif;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-    white-space: nowrap;
-  }
-  .au-action-btn.promote:hover  { background: rgba(160,116,60,0.1); color: var(--bronze); border-color: rgba(160,116,60,0.3); }
-  .au-action-btn.demote:hover   { background: rgba(43,35,24,0.06);  color: var(--bark-lt); border-color: rgba(43,35,24,0.15); }
-  .au-action-btn.suspend:hover  { background: rgba(230,126,34,0.1); color: var(--amber);  border-color: rgba(230,126,34,0.3); }
-  .au-action-btn.reinstate:hover{ background: rgba(39,174,96,0.1);  color: var(--green);  border-color: rgba(39,174,96,0.3); }
-  .au-action-btn.delete:hover   { background: rgba(192,57,43,0.1);  color: var(--red);    border-color: rgba(192,57,43,0.2); }
-
-  /* ── Skeleton ── */
-  .au-skel { animation: shimmer 1.4s ease-in-out infinite; }
-  @keyframes shimmer { 0%,100%{opacity:.45} 50%{opacity:1} }
-  .au-skel-row {
-    display: flex; align-items: center; gap: 1rem;
-    padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border);
-  }
-  .au-skel-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
-  .au-skel-line   { height: 10px; background: var(--border); border-radius: 2px; }
-
-  /* ── Empty ── */
-  .au-empty {
-    padding: 4rem 2rem; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
-  }
-  .au-empty-icon { color: rgba(43,35,24,0.1); }
-  .au-empty-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.2rem; font-style: italic; color: rgba(43,35,24,0.35);
-  }
-
-  /* ── Count bar ── */
-  .au-count-bar {
-    padding: 0.6rem 1.25rem; border-top: 1px solid var(--border);
-    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(43,35,24,0.3); background: var(--parch);
-  }
-
-  /* ── Delete modal ── */
-  .au-modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(14,15,13,0.65);
-    backdrop-filter: blur(4px); z-index: 500;
-    display: flex; align-items: center; justify-content: center; padding: 1rem;
-  }
-  .au-modal {
-    background: var(--white); padding: 2rem; max-width: 380px; width: 100%;
-  }
-  .au-modal-avatar {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: rgba(160,116,60,0.12); border: 2px solid rgba(160,116,60,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.3rem; font-style: italic; color: var(--bronze);
-    margin-bottom: 1rem;
-  }
-  .au-modal-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.3rem; font-weight: 400; color: var(--bark); margin-bottom: 0.5rem;
-  }
-  .au-modal-sub {
-    font-size: 0.78rem; color: var(--fog); line-height: 1.6; margin-bottom: 1.5rem;
-  }
-  .au-modal-btns { display: flex; gap: 0.75rem; }
-  .au-modal-cancel {
-    flex: 1; padding: 0.7rem;
-    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
-    background: none; border: 1px solid var(--border);
-    color: var(--fog); cursor: pointer; font-family: 'Jost', sans-serif;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .au-modal-cancel:hover { color: var(--bark); border-color: rgba(43,35,24,0.2); }
-  .au-modal-confirm {
-    flex: 1; padding: 0.7rem;
-    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
-    background: var(--red); color: white; border: none;
-    cursor: pointer; font-family: 'Jost', sans-serif; font-weight: 500;
-    transition: background 0.2s;
-  }
-  .au-modal-confirm:hover { background: #a93226; }
-
-  /* Toast */
-  .au-toast {
-    position: fixed; bottom: 2rem; right: 2rem; z-index: 600;
-    background: var(--bark); color: var(--parch);
-    padding: 0.75rem 1.25rem;
-    font-size: 0.72rem; letter-spacing: 0.08em;
-    display: flex; align-items: center; gap: 0.6rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    animation: toastIn 0.3s ease both;
-  }
-  @keyframes toastIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-`;
-
 const ROLE_FILTERS = ["All", "Admin", "User", "Suspended"];
 
 const formatDate = (d) => {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 function SkeletonRows() {
   return Array.from({ length: 6 }).map((_, i) => (
-    <div key={i} className="au-skel-row au-skel">
-      <div className="au-skel-circle" />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-        <div className="au-skel-line" style={{ width: `${50 + (i * 9) % 30}%` }} />
-        <div className="au-skel-line" style={{ width: "38%" }} />
+    <div
+      key={i}
+      className="grid grid-cols-[40px_1fr_100px_100px_140px] items-center gap-4 border-b border-gray-200 px-5 py-5 animate-pulse"
+    >
+      <div className="h-9 w-9 rounded-full bg-gray-200" />
+
+      <div className="space-y-2">
+        <div className="h-4 w-32 rounded bg-gray-200" />
+        <div className="h-3 w-48 rounded bg-gray-200" />
       </div>
-      <div className="au-skel-line" style={{ width: "55px" }} />
-      <div className="au-skel-line" style={{ width: "80px" }} />
+
+      <div className="h-6 w-16 rounded-full bg-gray-200" />
+      <div className="h-4 w-20 rounded bg-gray-200" />
+      <div className="h-7 w-28 rounded bg-gray-200" />
     </div>
   ));
 }
 
 export default function AdminUsers() {
-  const [users,    setUsers]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState("");
-  const [search,   setSearch]   = useState("");
-  const [filter,   setFilter]   = useState("All");
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
   const [toDelete, setToDelete] = useState(null);
-  const [toast,    setToast]    = useState("");
+  const [toast, setToast] = useState("");
 
   const fetchUsers = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
+
     try {
       const res = await API.get("/users");
+
       const raw = res.data;
-      const list = Array.isArray(raw)        ? raw
-                 : Array.isArray(raw?.users)  ? raw.users
-                 : Array.isArray(raw?.data)   ? raw.data
-                 : [];
+
+      const list = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.users)
+        ? raw.users
+        : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
+
       setUsers(list);
     } catch {
       setError("Could not load users.");
@@ -322,303 +67,828 @@ export default function AdminUsers() {
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3000);
   };
 
-  const updateUser = (id, changes) =>
-    setUsers(prev => prev.map(u => u._id === id ? { ...u, ...changes } : u));
+  const updateUser = (id, changes) => {
+    setUsers((prev) =>
+      prev.map((u) => (u._id === id ? { ...u, ...changes } : u))
+    );
+  };
 
   const handlePromote = async (user) => {
     try {
       await API.put(`/users/${user._id}`, { role: "admin" });
+
       updateUser(user._id, { role: "admin" });
+
       showToast(`${user.fullName} promoted to Admin`);
-    } catch { showToast("Action failed."); }
+    } catch {
+      showToast("Action failed.");
+    }
   };
 
   const handleDemote = async (user) => {
     try {
       await API.put(`/users/${user._id}`, { role: "user" });
+
       updateUser(user._id, { role: "user" });
+
       showToast(`${user.fullName} demoted to User`);
-    } catch { showToast("Action failed."); }
+    } catch {
+      showToast("Action failed.");
+    }
   };
 
   const handleSuspend = async (user) => {
     const suspended = user.suspended !== true;
+
     try {
       await API.put(`/users/${user._id}`, { suspended });
+
       updateUser(user._id, { suspended });
-      showToast(suspended ? `${user.fullName} suspended` : `${user.fullName} reinstated`);
-    } catch { showToast("Action failed."); }
+
+      showToast(
+        suspended
+          ? `${user.fullName} suspended`
+          : `${user.fullName} reinstated`
+      );
+    } catch {
+      showToast("Action failed.");
+    }
   };
 
   const handleDelete = async () => {
     if (!toDelete) return;
+
     try {
       await API.delete(`/users/${toDelete._id}`);
-      setUsers(prev => prev.filter(u => u._id !== toDelete._id));
+
+      setUsers((prev) =>
+        prev.filter((u) => u._id !== toDelete._id)
+      );
+
       showToast("User deleted");
-    } catch { showToast("Delete failed."); }
-    finally { setToDelete(null); }
+    } catch {
+      showToast("Delete failed.");
+    } finally {
+      setToDelete(null);
+    }
   };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return users.filter(u => {
+
+    return users.filter((u) => {
       const matchSearch =
         !q ||
         u.fullName?.toLowerCase().includes(q) ||
         u.email?.toLowerCase().includes(q) ||
         u.phone?.toLowerCase().includes(q);
+
       const matchFilter =
         filter === "All" ||
-        (filter === "Admin"     && u.role === "admin") ||
-        (filter === "User"      && u.role !== "admin" && !u.suspended) ||
+        (filter === "Admin" && u.role === "admin") ||
+        (filter === "User" &&
+          u.role !== "admin" &&
+          !u.suspended) ||
         (filter === "Suspended" && u.suspended);
+
       return matchSearch && matchFilter;
     });
   }, [users, search, filter]);
 
-  // Stats
-  const total     = users.length;
-  const admins    = users.filter(u => u.role === "admin").length;
-  const suspended = users.filter(u => u.suspended).length;
-  const newThisWeek = users.filter(u => {
+  /* ================= STATS ================= */
+
+  const total = users.length;
+
+  const admins = users.filter(
+    (u) => u.role === "admin"
+  ).length;
+
+  const suspended = users.filter(
+    (u) => u.suspended
+  ).length;
+
+  const newThisWeek = users.filter((u) => {
     if (!u.createdAt) return false;
-    const diff = (Date.now() - new Date(u.createdAt)) / 86400000;
+
+    const diff =
+      (Date.now() - new Date(u.createdAt)) /
+      86400000;
+
     return diff <= 7;
   }).length;
 
-  const statusClass = (u) =>
-    u.suspended ? "suspended" : u.lastLogin ? "active" : "inactive";
-
   return (
-    <>
-      <style>{STYLES}</style>
-      <div className="au-root">
+    <div className="space-y-7 text-gray-900">
 
-        {/* ── Header ── */}
-        <div className="au-header">
-          <div>
-            <h1 className="au-title">All <em>Users</em></h1>
-            <p className="au-subtitle">{total} registered account{total !== 1 ? "s" : ""}</p>
-          </div>
-          <button className="au-refresh-btn" onClick={fetchUsers}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-              <path d="M10.5 1.5A5 5 0 1 1 1.5 6"/><path d="M10.5 1.5V5h-3.5"/>
-            </svg>
-            Refresh
-          </button>
+      {/* ================================================= */}
+      {/* HEADER */}
+      {/* ================================================= */}
+
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+
+        <div>
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.3em] text-gray-400">
+            Administration
+          </p>
+
+          <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">
+            All <em className="font-light">Users</em>
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {total} registered account
+            {total !== 1 ? "s" : ""}
+          </p>
         </div>
 
-        {/* ── Stats ── */}
-        <div className="au-stats">
-          <div className="au-stat">
-            <span className="au-stat-label">Total Users</span>
-            <span className="au-stat-val">{total}</span>
-          </div>
-          <div className="au-stat">
-            <span className="au-stat-label">Admins</span>
-            <span className="au-stat-val bronze">{admins}</span>
-          </div>
-          <div className="au-stat">
-            <span className="au-stat-label">New This Week</span>
-            <span className="au-stat-val green">{newThisWeek}</span>
-          </div>
-          <div className="au-stat">
-            <span className="au-stat-label">Suspended</span>
-            <span className="au-stat-val" style={{ color: suspended > 0 ? "var(--red)" : "var(--fog)" }}>
-              {suspended}
+        <button
+          onClick={fetchUsers}
+          className="flex w-fit items-center gap-2 rounded border border-gray-300 bg-white px-4 py-2.5 text-xs uppercase tracking-[0.15em] transition hover:border-gray-900 hover:bg-gray-900 hover:text-white"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          >
+            <path d="M10.5 1.5A5 5 0 1 1 1.5 6" />
+            <path d="M10.5 1.5V5h-3.5" />
+          </svg>
+
+          Refresh
+        </button>
+
+      </div>
+
+      {/* ================================================= */}
+      {/* STATS */}
+      {/* ================================================= */}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5">
+          <div className="flex items-start justify-between">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+              Total Users
             </span>
+
+            <span className="text-xs text-gray-400">
+              01
+            </span>
+          </div>
+
+          <div className="mt-5 font-serif text-3xl">
+            {total}
           </div>
         </div>
 
-        {/* ── Toolbar ── */}
-        <div className="au-toolbar">
-          <div className="au-search-wrap">
-            <span className="au-search-icon">
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-                <circle cx="5.5" cy="5.5" r="4.5"/><path d="M9.5 9.5l2.5 2.5"/>
-              </svg>
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5">
+          <div className="flex items-start justify-between">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+              Administrators
             </span>
-            <input
-              className="au-search"
-              placeholder="Search by name, email, phone…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+
+            <span className="text-xs text-gray-400">
+              02
+            </span>
           </div>
-          {ROLE_FILTERS.map(f => (
+
+          <div className="mt-5 font-serif text-3xl">
+            {admins}
+          </div>
+        </div>
+
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5">
+          <div className="flex items-start justify-between">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+              New This Week
+            </span>
+
+            <span className="text-xs text-gray-400">
+              03
+            </span>
+          </div>
+
+          <div className="mt-5 font-serif text-3xl text-green-700">
+            {newThisWeek}
+          </div>
+        </div>
+
+        <div className="rounded border border-gray-200 bg-[#fffdf2] p-5">
+          <div className="flex items-start justify-between">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+              Suspended
+            </span>
+
+            <span className="text-xs text-gray-400">
+              04
+            </span>
+          </div>
+
+          <div className="mt-5 font-serif text-3xl text-red-600">
+            {suspended}
+          </div>
+        </div>
+
+      </div>
+
+      {/* ================================================= */}
+      {/* TOOLBAR */}
+      {/* ================================================= */}
+
+      <div className="flex flex-col gap-4 rounded border border-gray-200 bg-[#fffdf2] p-4 lg:flex-row lg:items-center lg:justify-between">
+
+        {/* Search */}
+
+        <div className="relative w-full lg:max-w-sm">
+
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            width="14"
+            height="14"
+            viewBox="0 0 13 13"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          >
+            <circle cx="5.5" cy="5.5" r="4.5" />
+            <path d="M9.5 9.5l2.5 2.5" />
+          </svg>
+
+          <input
+            className="w-full rounded border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-gray-900"
+            placeholder="Search by name, email, phone…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+        </div>
+
+        {/* Filters */}
+
+        <div className="flex flex-wrap gap-2">
+
+          {ROLE_FILTERS.map((f) => (
             <button
               key={f}
-              className={`au-filter${filter === f ? " active" : ""}`}
               onClick={() => setFilter(f)}
+              className={`rounded px-4 py-2 text-xs uppercase tracking-[0.12em] transition ${
+                filter === f
+                  ? "bg-gray-900 text-white"
+                  : "border border-gray-200 bg-white text-gray-600 hover:border-gray-900 hover:text-gray-900"
+              }`}
             >
               {f}
             </button>
           ))}
+
         </div>
 
-        {/* ── Table ── */}
-        <div className="au-card">
-          {error ? (
-            <div className="au-empty"><div className="au-empty-title">{error}</div></div>
-          ) : loading ? (
-            <SkeletonRows />
-          ) : filtered.length === 0 ? (
-            <div className="au-empty">
-              <div className="au-empty-icon">
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="16" cy="14" r="7"/>
-                  <path d="M4 36c0-7 5-12 12-12s12 5 12 12"/>
-                  <path d="M28 8a7 7 0 010 14M36 36c0-5-3-9-8-11"/>
-                </svg>
-              </div>
-              <div className="au-empty-title">No users found</div>
-            </div>
-          ) : (
-            <div className="au-table-wrap">
-              <table className="au-table">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Role</th>
-                    <th>Joined</th>
-                    <th>Bookings</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(u => {
-                    const initial = u.fullName?.[0] ?? u.email?.[0] ?? "?";
-                    const isAdmin = u.role === "admin";
-                    const isSuspended = u.suspended === true;
-                    return (
-                      <tr key={u._id}>
+      </div>
 
-                        {/* User */}
-                        <td>
-                          <div className="au-user-cell">
-                            <div className="au-avatar">
-                              {initial}
-                              <span className={`au-avatar-status ${statusClass(u)}`} />
+      {/* ================================================= */}
+      {/* CONTENT */}
+      {/* ================================================= */}
+
+      <div className="overflow-hidden rounded border border-gray-200 bg-white">
+
+        {error ? (
+
+          <div className="flex min-h-[300px] items-center justify-center p-8">
+            <div className="rounded border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+              {error}
+            </div>
+          </div>
+
+        ) : loading ? (
+
+          <div>
+            <div className="hidden border-b border-gray-200 bg-[#fafaf8] px-5 py-4 lg:grid lg:grid-cols-[40px_1fr_100px_100px_140px] lg:gap-4">
+              <span />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                User
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                Role
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                Joined
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                Actions
+              </span>
+            </div>
+
+            <SkeletonRows />
+          </div>
+
+        ) : filtered.length === 0 ? (
+
+          <div className="flex min-h-[350px] flex-col items-center justify-center text-center">
+
+            <div className="mb-5 rounded-full bg-[#faf7e8] p-5 text-gray-400">
+
+              <svg
+                width="38"
+                height="38"
+                viewBox="0 0 40 40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="16" cy="14" r="7" />
+                <path d="M4 36c0-7 5-12 12-12s12 5 12 12" />
+                <path d="M28 8a7 7 0 010 14M36 36c0-5-3-9-8-11" />
+              </svg>
+
+            </div>
+
+            <div className="font-serif text-2xl">
+              No users found
+            </div>
+
+            <p className="mt-2 text-sm text-gray-400">
+              Try adjusting your search or filter.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <>
+            {/* Desktop table */}
+
+            <div className="hidden overflow-x-auto md:block">
+
+              <table className="w-full text-left">
+
+                <thead className="border-b border-gray-200 bg-[#fafaf8]">
+
+                  <tr>
+
+                    <th className="px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400">
+                      User
+                    </th>
+
+                    <th className="px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400">
+                      Role
+                    </th>
+
+                    <th className="px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400">
+                      Joined
+                    </th>
+
+                    <th className="px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400">
+                      Bookings
+                    </th>
+
+                    <th className="px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400">
+                      Actions
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody>
+
+                  {filtered.map((u) => {
+
+                    const initial =
+                      u.fullName?.[0] ??
+                      u.email?.[0] ??
+                      "?";
+
+                    const isAdmin =
+                      u.role === "admin";
+
+                    const isSuspended =
+                      u.suspended === true;
+
+                    return (
+                      <tr
+                        key={u._id}
+                        className="border-b border-gray-100 transition hover:bg-[#fffdf5]"
+                      >
+
+                        {/* USER */}
+
+                        <td className="px-5 py-5">
+
+                          <div className="flex items-center gap-3">
+
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f4f0db] font-serif text-lg">
+                              {initial.toUpperCase()}
                             </div>
-                            <div>
-                              <div className="au-user-name">
-                                {u.fullName ?? "—"}
+
+                            <div className="min-w-0">
+
+                              <div className="flex items-center gap-2 font-medium">
+
+                                <span className="truncate">
+                                  {u.fullName ?? "—"}
+                                </span>
+
                                 {isSuspended && (
-                                  <span style={{ marginLeft:"0.4rem", fontSize:"0.55rem", letterSpacing:"0.14em", textTransform:"uppercase", color:"var(--red)", verticalAlign:"middle" }}>
-                                    · Suspended
+                                  <span className="rounded bg-red-50 px-2 py-0.5 text-[9px] uppercase tracking-wider text-red-600">
+                                    Suspended
                                   </span>
                                 )}
+
                               </div>
-                              <div className="au-user-email">{u.email}</div>
+
+                              <div className="mt-1 truncate text-xs text-gray-400">
+                                {u.email}
+                              </div>
+
                             </div>
+
                           </div>
+
                         </td>
 
-                        {/* Role */}
-                        <td>
-                          <span className={`au-role ${isAdmin ? "admin" : "user"}`}>
-                            <span className="au-role-dot" />
+                        {/* ROLE */}
+
+                        <td className="px-5 py-5">
+
+                          <span
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-wider ${
+                              isAdmin
+                                ? "bg-green-50 text-green-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                isAdmin
+                                  ? "bg-green-600"
+                                  : "bg-gray-400"
+                              }`}
+                            />
+
                             {isAdmin ? "Admin" : "User"}
+
                           </span>
+
                         </td>
 
-                        {/* Joined */}
-                        <td>
-                          <span className="au-date">{formatDate(u.createdAt)}</span>
+                        {/* JOINED */}
+
+                        <td className="px-5 py-5 text-sm text-gray-500">
+                          {formatDate(u.createdAt)}
                         </td>
 
-                        {/* Bookings */}
-                        <td>
-                          <span className="au-bookings-count">
-                            {u.bookingsCount ?? u.bookings?.length ?? 0}
+                        {/* BOOKINGS */}
+
+                        <td className="px-5 py-5">
+
+                          <span className="font-medium">
+                            {u.bookingsCount ??
+                              u.bookings?.length ??
+                              0}
                           </span>
+
                         </td>
 
-                        {/* Actions */}
-                        <td>
-                          <div className="au-row-actions">
+                        {/* ACTIONS */}
+
+                        <td className="px-5 py-5">
+
+                          <div className="flex items-center gap-1">
+
                             {!isAdmin ? (
-                              <button className="au-action-btn promote" onClick={() => handlePromote(u)}>
-                                ↑ Promote
+                              <button
+                                onClick={() =>
+                                  handlePromote(u)
+                                }
+                                className="rounded px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-green-700 hover:bg-green-50"
+                              >
+                                Promote
                               </button>
                             ) : (
-                              <button className="au-action-btn demote" onClick={() => handleDemote(u)}>
-                                ↓ Demote
+                              <button
+                                onClick={() =>
+                                  handleDemote(u)
+                                }
+                                className="rounded px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 hover:bg-gray-100"
+                              >
+                                Demote
                               </button>
                             )}
+
                             <button
-                              className={`au-action-btn ${isSuspended ? "reinstate" : "suspend"}`}
-                              onClick={() => handleSuspend(u)}
+                              onClick={() =>
+                                handleSuspend(u)
+                              }
+                              className={`rounded px-2.5 py-1.5 text-[10px] uppercase tracking-wider ${
+                                isSuspended
+                                  ? "text-green-700 hover:bg-green-50"
+                                  : "text-orange-600 hover:bg-orange-50"
+                              }`}
                             >
-                              {isSuspended ? "Reinstate" : "Suspend"}
+                              {isSuspended
+                                ? "Reinstate"
+                                : "Suspend"}
                             </button>
+
                             <button
-                              className="au-action-btn delete"
-                              onClick={() => setToDelete(u)}
+                              onClick={() =>
+                                setToDelete(u)
+                              }
+                              className="rounded p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
                               aria-label="Delete user"
                             >
-                              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M1.5 3h8M4 3V2h3v1M9 3l-.5 7h-5L3 3"/>
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 11 11"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M1.5 3h8M4 3V2h3v1M9 3l-.5 7h-5L3 3" />
                               </svg>
                             </button>
+
                           </div>
+
                         </td>
 
                       </tr>
                     );
                   })}
+
                 </tbody>
+
               </table>
-            </div>
-          )}
 
-          {!loading && !error && filtered.length > 0 && (
-            <div className="au-count-bar">
-              Showing {filtered.length} of {total} user{total !== 1 ? "s" : ""}
             </div>
-          )}
-        </div>
 
-        {/* ── Delete modal ── */}
-        {toDelete && (
-          <div className="au-modal-backdrop" onClick={() => setToDelete(null)}>
-            <div className="au-modal" onClick={e => e.stopPropagation()}>
-              <div className="au-modal-avatar">
-                {toDelete.fullName?.[0] ?? toDelete.email?.[0] ?? "?"}
-              </div>
-              <div className="au-modal-title">Delete User</div>
-              <p className="au-modal-sub">
-                Are you sure you want to permanently delete{" "}
-                <strong style={{ color: "var(--bark-lt)" }}>{toDelete.fullName ?? toDelete.email}</strong>?
-                All their data and bookings will be lost.
-              </p>
-              <div className="au-modal-btns">
-                <button className="au-modal-cancel" onClick={() => setToDelete(null)}>Cancel</button>
-                <button className="au-modal-confirm" onClick={handleDelete}>Delete</button>
-              </div>
+            {/* ================================================= */}
+            {/* MOBILE CARDS */}
+            {/* ================================================= */}
+
+            <div className="divide-y divide-gray-100 md:hidden">
+
+              {filtered.map((u) => {
+
+                const initial =
+                  u.fullName?.[0] ??
+                  u.email?.[0] ??
+                  "?";
+
+                const isAdmin =
+                  u.role === "admin";
+
+                const isSuspended =
+                  u.suspended === true;
+
+                return (
+                  <div
+                    key={u._id}
+                    className="p-5"
+                  >
+
+                    <div className="flex items-start gap-3">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f4f0db] font-serif text-lg">
+                        {initial.toUpperCase()}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+
+                        <div className="font-medium">
+                          {u.fullName ?? "—"}
+                        </div>
+
+                        <div className="mt-1 truncate text-xs text-gray-400">
+                          {u.email}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+
+                          <span
+                            className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-wider ${
+                              isAdmin
+                                ? "bg-green-50 text-green-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {isAdmin ? "Admin" : "User"}
+                          </span>
+
+                          {isSuspended && (
+                            <span className="rounded-full bg-red-50 px-3 py-1 text-[9px] uppercase tracking-wider text-red-600">
+                              Suspended
+                            </span>
+                          )}
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3 border-t border-gray-100 pt-4">
+
+                      <div>
+                        <p className="text-[9px] uppercase tracking-wider text-gray-400">
+                          Joined
+                        </p>
+
+                        <p className="mt-1 text-sm">
+                          {formatDate(u.createdAt)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-[9px] uppercase tracking-wider text-gray-400">
+                          Bookings
+                        </p>
+
+                        <p className="mt-1 text-sm">
+                          {u.bookingsCount ??
+                            u.bookings?.length ??
+                            0}
+                        </p>
+                      </div>
+
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+
+                      {!isAdmin ? (
+                        <button
+                          onClick={() =>
+                            handlePromote(u)
+                          }
+                          className="rounded border border-green-200 px-3 py-2 text-[10px] uppercase tracking-wider text-green-700"
+                        >
+                          Promote
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            handleDemote(u)
+                          }
+                          className="rounded border border-gray-200 px-3 py-2 text-[10px] uppercase tracking-wider text-gray-600"
+                        >
+                          Demote
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() =>
+                          handleSuspend(u)
+                        }
+                        className="rounded border border-orange-200 px-3 py-2 text-[10px] uppercase tracking-wider text-orange-600"
+                      >
+                        {isSuspended
+                          ? "Reinstate"
+                          : "Suspend"}
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setToDelete(u)
+                        }
+                        className="rounded border border-red-200 px-3 py-2 text-[10px] uppercase tracking-wider text-red-600"
+                      >
+                        Delete
+                      </button>
+
+                    </div>
+
+                  </div>
+                );
+              })}
+
             </div>
-          </div>
+
+          </>
         )}
 
-        {/* Toast */}
-        {toast && (
-          <div className="au-toast">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-              <circle cx="6" cy="6" r="5"/><path d="M4 6l1.5 1.5L8 4"/>
-            </svg>
-            {toast}
-          </div>
-        )}
+        {!loading &&
+          !error &&
+          filtered.length > 0 && (
+            <div className="border-t border-gray-200 bg-[#fafaf8] px-5 py-3 text-[10px] uppercase tracking-[0.15em] text-gray-400">
+              Showing {filtered.length} of {total} user
+              {total !== 1 ? "s" : ""}
+            </div>
+          )}
 
       </div>
-    </>
+
+      {/* ================================================= */}
+      {/* DELETE MODAL */}
+      {/* ================================================= */}
+
+      {toDelete && (
+
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5 backdrop-blur-sm"
+          onClick={() => setToDelete(null)}
+        >
+
+          <div
+            className="w-full max-w-md rounded border border-gray-200 bg-[#fffdf2] p-7 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 font-serif text-xl text-red-600">
+              {toDelete.fullName?.[0] ??
+                toDelete.email?.[0] ??
+                "?"}
+            </div>
+
+            <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400">
+              User Management
+            </p>
+
+            <h2 className="mt-2 font-serif text-3xl">
+              Delete <em>User</em>
+            </h2>
+
+            <p className="mt-4 text-sm leading-6 text-gray-500">
+              Are you sure you want to permanently delete{" "}
+              <strong className="font-medium text-gray-900">
+                {toDelete.fullName ??
+                  toDelete.email}
+              </strong>
+              ? All their data and bookings will be lost.
+            </p>
+
+            <div className="mt-7 flex justify-end gap-3">
+
+              <button
+                onClick={() =>
+                  setToDelete(null)
+                }
+                className="rounded border border-gray-300 px-4 py-2.5 text-xs uppercase tracking-wider hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="rounded bg-red-600 px-4 py-2.5 text-xs uppercase tracking-wider text-white hover:bg-red-700"
+              >
+                Delete User
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* ================================================= */}
+      {/* TOAST */}
+      {/* ================================================= */}
+
+      {toast && (
+
+        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded bg-gray-900 px-4 py-3 text-xs text-white shadow-xl">
+
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          >
+            <circle cx="6" cy="6" r="5" />
+            <path d="M4 6l1.5 1.5L8 4" />
+          </svg>
+
+          {toast}
+
+        </div>
+
+      )}
+
+    </div>
   );
 }
